@@ -1,216 +1,118 @@
-# 💻 Zabbix Monitoring Lab - Manual Deployment
+# Zabbix Monitoring Lab - Manual Deployment
 
-This project documents the manual setup of a fully functional **Zabbix 6.0 LTS monitoring server** running on **Ubuntu Server 22.04**, hosted on a **VirtualBox virtual machine**. The lab demonstrates how to configure system monitoring from the ground up, with hands-on work at every stage.
-
----
-
-## 📌 Overview
-
-This lab simulates a production-style environment for monitoring servers, services, and systems using Zabbix. It includes:
-
-* Manual installation of Ubuntu Server 22.04 (LTS)
-* Installation and configuration of Zabbix server, frontend, and agent
-* MySQL database setup with security hardening
-* Apache web frontend for dashboard access
-* Bridged networking for external browser access
+This project documents the manual setup of a fully functional Zabbix 6.0 LTS monitoring server running on Ubuntu Server 22.04, hosted on a VirtualBox virtual machine. The lab demonstrates how to configure system monitoring from the ground up, with hands-on work at every stage.
 
 ---
 
-## 🛠️ System Requirements
+## Overview
 
-* **Host OS**: Windows 10/11
-* **Virtualization Tool**: VirtualBox (latest version)
-* **ISO Used**: ubuntu-22.04.5-live-server-amd64.iso
-* **VM Specs**:
-
-  * 2 GB RAM
-  * 1 CPU
-  * 30 GB dynamically allocated disk
-  * Bridged Network Adapter (Ethernet preferred)
+This lab simulates a production-style environment for monitoring servers, services, and systems using Zabbix. It includes manual installation of Ubuntu Server 22.04 (LTS), installation and configuration of the Zabbix server, frontend, and agent, MySQL database setup with security hardening, an Apache web frontend for dashboard access, and bridged networking for external browser access.
 
 ---
 
-## 🔧 Step-by-Step Setup
+## Before vs. After
+
+Before: A fresh Ubuntu Server with no monitoring in place, no visibility into server health, services, or potential outages.
+
+After: A fully functional Zabbix 6.0 LTS server with a MySQL backend and Apache-served dashboard, actively monitoring the host and ready to onboard additional agent nodes.
+
+---
+
+## System Requirements
+
+Host OS: Windows 10/11. Virtualization Tool: VirtualBox (latest version). ISO Used: ubuntu-22.04.5-live-server-amd64.iso. VM Specs: 2 GB RAM, 1 CPU, 30 GB dynamically allocated disk, Bridged Network Adapter (Ethernet preferred).
+
+---
+
+## Step-by-Step Setup
 
 ### 1. Ubuntu Server Installation
 
-* Selected "Ubuntu Server" (not minimized)
-* Configured LVM with full disk
-* Enabled OpenSSH Server
-* Skipped featured snaps (e.g., Docker, Kubernetes)
+Selected "Ubuntu Server" (not minimized), configured LVM with full disk, enabled OpenSSH Server, and skipped featured snaps (e.g., Docker, Kubernetes).
 
 ### 2. Network Configuration
 
-* Bridged Adapter enabled in VirtualBox
-* Physical Ethernet used (Wi-Fi bridge may not work reliably)
-* Verified IP via `ip a` after reboot
+Bridged Adapter enabled in VirtualBox. Physical Ethernet used (Wi-Fi bridge may not work reliably). Verified IP via ip a after reboot.
 
 ### 3. MySQL Configuration
 
-* Installed MySQL via apt
-* Ran `mysql_secure_installation`
+Installed MySQL via apt and ran mysql_secure_installation, removing anonymous users, disallowing root remote login, and removing the test database. Logged into MySQL as root and created the Zabbix DB:
 
-  * Removed anonymous users
-  * Disallowed root remote login
-  * Removed test database
-* Logged into MySQL as root and created Zabbix DB:
-
-```sql
 CREATE DATABASE zabbix character set utf8mb4 collate utf8mb4_bin;
-CREATE USER 'zabbix'@'localhost' IDENTIFIED BY '<your-password-here>';
+CREATE USER 'zabbix'@'localhost' IDENTIFIED BY 'YOUR_PASSWORD_HERE';
 GRANT ALL PRIVILEGES ON zabbix.* TO 'zabbix'@'localhost';
 FLUSH PRIVILEGES;
-```
 
 ---
 
-## 📦 Zabbix Installation
+## Zabbix Installation
 
-### Repository & Packages
+Repository & Packages:
 
-```bash
 wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.0-4+ubuntu22.04_all.deb
 sudo dpkg -i zabbix-release_6.0-4+ubuntu22.04_all.deb
 sudo apt update
-```
 
-### Install Zabbix Server, Frontend, and Agent
+Install Zabbix Server, Frontend, and Agent:
 
-```bash
 sudo apt install zabbix-server-mysql zabbix-frontend-php zabbix-apache-conf zabbix-agent mysql-server -y
-```
 
-### Import Initial Database Schema
+Import Initial Database Schema:
 
-```bash
 zcat /usr/share/doc/zabbix-server-mysql*/create.sql.gz | mysql -u zabbix -p zabbix
-```
 
-### Configure Zabbix Server
+Configure Zabbix Server (set DBPassword in /etc/zabbix/zabbix_server.conf):
 
-```bash
 sudo nano /etc/zabbix/zabbix_server.conf
-# Set:
-DBPassword=<your-password-here>
-```
 
-### Start and Enable Services
+Start and Enable Services:
 
-```bash
 sudo systemctl restart zabbix-server zabbix-agent apache2
 sudo systemctl enable zabbix-server zabbix-agent apache2
-```
 
 ---
 
-## 🌐 Accessing the Dashboard
+## Accessing the Dashboard
 
-### Get IP Address
-
-```bash
-ip a
-```
-
-Use the `inet` value under your bridged interface (e.g., `192.168.x.x` or `10.x.x.x`).
-
-### Open Zabbix UI
-
-On host machine browser:
-
-```
-http://<your-vm-ip>/zabbix
-```
-
-### Login Credentials
-
-* **Username**: `Admin`
-* **Password**: *your chosen Zabbix admin password during setup*
+Get the IP address with ip a and use the inet value under the bridged interface (e.g., 192.168.x.x or 10.x.x.x). Open the Zabbix UI on the host machine browser at http://your-vm-ip/zabbix. Login with username Admin and the admin password chosen during setup.
 
 ---
 
-## 🧠 Lessons Learned / Troubleshooting
+## Lessons Learned / Troubleshooting
 
-* VirtualBox "Port Forwarding" UI sometimes fails to display — bridged adapter with Ethernet is more reliable
-* Cloud-init sometimes traps users in `bash: systemctl: command not found` — switching to manual install avoids this
-* `Ctrl + C` and `q` are lifesavers for exiting stuck command prompts or paged output
-* Password mismatches and multiline SQL input can cause MySQL errors — be meticulous
+VirtualBox "Port Forwarding" UI sometimes fails to display, a bridged adapter with Ethernet is more reliable. Cloud-init sometimes traps users in "bash: systemctl: command not found", switching to manual install avoids this. Ctrl+C and q are lifesavers for exiting stuck command prompts or paged output. Password mismatches and multiline SQL input can cause MySQL errors, so it pays to be meticulous.
 
 ---
 
-## 📸 Screenshots to Include
+## Screenshots Included
 
-Here are the key screenshots included in this project:
-
-### VirtualBox Network Configuration
+VirtualBox Network Configuration, Ubuntu Language Selection, Network Configuration During Install, User and Hostname Setup, Storage Configuration (LVM), OpenSSH Server Enabled During Ubuntu Installation, Final Install Summary, IP Address Confirmation via ip a, Zabbix Login Page, and Zabbix Dashboard Overview.
 
 ![VirtualBox Network](screenshots/virtualbox-network.png)
-
-### Ubuntu Language Selection
-
 ![Ubuntu Language](screenshots/ubuntu-language-selection.png)
-
-### Network Configuration During Install
-
 ![Network Config](screenshots/ubuntu-network-config.png)
-
-### User and Hostname Setup
-
 ![User Setup](screenshots/ubuntu-user-setup.png)
-
-### Storage Configuration (LVM)
-
 ![LVM Setup](screenshots/ubuntu-lvm-setup.png)
-
-### OpenSSH Server Enabled During Ubuntu Installation
-
 ![OpenSSH Enabled](screenshots/ubuntu-openssh-selected.png)
-
-### Final Install Summary
-
 ![Install Summary](screenshots/ubuntu-install-summary.png)
-
-### IP Address Confirmation via `ip a`
-
 ![IP Address](screenshots/ip-address-confirmation.png)
-
-### Zabbix Login Page
-
 ![Zabbix Login](screenshots/zabbix-login.png)
-
-### Zabbix Dashboard Overview
-
 ![Zabbix Dashboard](screenshots/zabbix-dashboard.png)
 
 ---
 
-## 🚀 Future Enhancements
+## Future Enhancements
 
-* Add monitored agent node (e.g., second Ubuntu VM)
-* Email alert configuration
-* Graph widget setup and alert simulations
-* GitHub Actions or CI pipeline integration
+Add a monitored agent node (e.g., a second Ubuntu VM), configure email alerts, set up graph widgets and alert simulations, and integrate GitHub Actions or a CI pipeline.
 
 ---
 
-## 🏷️ Tags
+## Tags
 
-`Zabbix` `Monitoring` `Ubuntu` `VirtualBox` `MySQL` `Apache` `Portfolio Lab` `Sysadmin`
-
----
-
-## ⚖️ License
-
-This project is licensed under the [Creative Commons Attribution 4.0 International License (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/).
-
-You are free to:
-
-* **Share** — copy and redistribute the material in any medium or format
-* **Adapt** — remix, transform, and build upon the material for any purpose, even commercially
-
-Under the following terms:
-
-* **Attribution** — You must give appropriate credit, provide a link to the license, and indicate if changes were made.
+Zabbix, Monitoring, Ubuntu, VirtualBox, MySQL, Apache, Portfolio Lab, Sysadmin
 
 ---
 
+## License
 
+This project is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). You are free to share (copy and redistribute the material in any medium or format) and adapt (remix, transform, and build upon the material for any purpose, even commercially), under the condition of attribution: you must give appropriate credit, provide a link to the license, and indicate if changes were made.
